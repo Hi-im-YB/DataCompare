@@ -91,7 +91,6 @@ for c_info in company_ages_by_names:
 # for company_info in company_data_result:
 #     print(company_info)
 
-#TODO
 #1.1 if company in all groups (shift minimum age)
 company_all_ages = list()
 for c_info in company_data_result:
@@ -116,7 +115,24 @@ for c_info in company_data_result:
     company_all_ages.append((c_info[0], ages_slice, ages_entries))
 
 #companies with all age bounds entries
+print('\nCOMPANIES WITH BOUND AGES ENTRIES:\n')
 for company_info in company_all_ages:
     print(company_info)
 
 #1.2 for each Company find product value, multiplied by, we have all age groups etries
+company_all_entries = list()
+for c_info in company_all_ages:
+    ages_entries = 0
+    for c_group in c_info[2]:
+        for g_group in YEARS_SLICE.keys():
+            #print('company = ', c_info[0], ' company group = ', c_group, ' bound group age = ', g_group)
+            if c_group == g_group:
+                ages_entries += 1
+
+        if ages_entries == len(YEARS_SLICE.keys()):
+            #print('company age entries: ', ages_entries)
+            company_all_entries.append((c_info[0], c_info[1:-1], c_info[2]))
+
+print('\nCOMPANIES WITH ALL AGES ENTRIES:\n')
+for company_info in company_all_entries:
+    print(company_info)

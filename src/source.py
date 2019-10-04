@@ -178,4 +178,10 @@ for c_info in company_all:
 
 #suppose that desirable product value is:
 #K_company_i = 1/<K>*A_i
-average_k = None
+average_k = 0.0
+
+for c_item in company_all:
+    average_k += c_item[-1]
+
+average_k = average_k/len(company_all)
+print('\nAVERAGE TOTAL VALUE OF ALL UNIQUE COMPANIES WITH ALL AGES ENTRIES: ', average_k)

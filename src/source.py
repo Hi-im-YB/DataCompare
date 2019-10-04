@@ -45,10 +45,17 @@ def column_data_by_index(file, _index):
     df = pd.DataFrame(file)
     return df.iloc[:, _index]
 
+def column_data_by_name(input_file, column_name):
+    return column_data_by_index(input_file,
+                                    column_index(input_file, column_name))
+
+def column_value_by_row(df, column_value, row_value):
+    return df.loc[df[column_value] == row_value]
+
 #get actual company info from data
-company_name = column_data_by_index(input_file, column_index(input_file, 'Company'))
-company_years = column_data_by_index(input_file, column_index(input_file, 'YrsCompany'))
-company_experience = column_data_by_index(input_file, column_index(input_file, 'YrsExperience')) #as profile marker
+company_name = column_data_by_name(input_file, 'Company')
+company_years = column_data_by_name(input_file, 'YrsCompany')
+company_experience = column_data_by_name(input_file, 'YrsExperience')
 
 company_profile = {}
 company_profile['Company'] = company_name
@@ -131,8 +138,44 @@ for c_info in company_all_ages:
 
         if ages_entries == len(YEARS_SLICE.keys()):
             #print('company age entries: ', ages_entries)
-            company_all_entries.append((c_info[0], c_info[1:-1], c_info[2]))
+            company_all_entries.append((c_info[0], c_info[1:-1][0][0], c_info[2]))
 
 print('\nCOMPANIES WITH ALL AGES ENTRIES:\n')
 for company_info in company_all_entries:
     print(company_info)
+
+company_total = column_data_by_name(input_file, 'TotalValue')
+company_profile['TotalValue'] = company_total
+
+#find totalvalues for all companies rows and calculate local average
+df_company_data = list()
+for c_info in zip(company_profile['Company'], company_profile['TotalValue']):
+    #print(c_info)
+    try:
+        df_company_data.append([c_info[0], float(c_info[1].replace(',', '.'))])
+    except:
+        #lose some data because of str totalvalue to float
+        pass
+
+#find mean TotalValue for each Company
+dfc = pd.DataFrame(df_company_data, columns = ['Company', 'TotalValue'])
+dfc_total_means = dfc.groupby('Company', as_index=False)['TotalValue'].mean()
+
+company_all = list()
+for c_info in company_all_entries:
+    #print(c_info)
+    try:
+        mean_total = column_value_by_row(dfc_total_means, 'Company', c_info[0]).iloc[0, 1]
+        #print(mean_total)
+        company_all.append((c_info[0], c_info[1:-1][0], c_info[2], mean_total))
+    except:
+        # lose some data if no mean value of TotalValue for current company
+        pass
+
+print('\nCOMPANIES WITH ALL AGES ENTRIES AND TotalValue MEANS:\n')
+for c_info in company_all:
+    print(c_info)
+
+#suppose that desirable product value is:
+#K_company_i = 1/<K>*A_i
+average_k = None

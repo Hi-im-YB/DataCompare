@@ -5,7 +5,7 @@ import pandas as pd
 #Company YrsExperience = min -> max Company YrsExperience : YrsCompany = [0-2] && [3-5] && [6-10] && [11-15] && [16+]
 #YrsCompany, Company are the same length - data with equal row numbers for each column
 
-#group age slices
+#group age slices [N group * M age set]
 FIRST_GROUP = [0.0, 1.0, 2.0]
 SECOND_GROUP = [3.0, 4.0, 5.0]
 THIRD_GROUP = [6.0, 7.0, 8.0, 9.0, 10.0]
@@ -23,14 +23,15 @@ YEARS_SLICE = {'FIRST_GROUP' : FIRST_GROUP,
 INPUT_DATA_PATH = '../common/data.csv'
 input_file = pd.read_csv(INPUT_DATA_PATH)
 
-def is_year_in_years_slice(min_company_age):
+def is_year_in_years_slice(company_age):
     #by default return 1 st group if None age bound/...
     actual_group = 'FIRST_GROUP'
     for group_data in YEARS_SLICE.items():
-        #print('current year = ', group_data, ' for group: ', group_data[0], min_company_age)
-        if min_company_age in group_data[1]:
-            #print('In bounds, minimum age for group: ', group_data[0])
-            actual_group = group_data[0]
+        #print('current year = ', group_data, ' for group: ', group_data[0], company_age)
+        for group_age in group_data[1]:
+            if company_age == group_age:
+                #print('In bounds, minimum age for group: ', group_data[0])
+                actual_group = group_data[0]
     return actual_group
 
 def pdf(_input_file):
@@ -71,24 +72,51 @@ company_ages_by_names = list(map(tuple, company_ages_by_names_raw.values()))
 #find minimum company age and search if that value in group ages slice
 print("Filtered companies by ages length: ", len(company_ages_by_names))
 company_data_result = list()
-for company_info in company_ages_by_names:
+for c_info in company_ages_by_names:
     #print('company name', company_info[0], 'ages: ', company_info[1:-1])
 
     min_company_age = 0.0
     try:
-        min_company_age = min(company_info[1:-1])
+        min_company_age = min(c_info[1:-1])
     except ValueError:
         #print('Company have not age bounds, suppose that necessary experience is 0 years')
         pass
 
-    company_data_result.append((company_info[0], company_info[1:-1], is_year_in_years_slice(min_company_age)))
+    company_data_result.append((c_info[0], c_info[1:-1], is_year_in_years_slice(min_company_age)))
 
     #print('minimum age: ', min_company_age)
     #print('ages slice: ', is_year_in_years_slice(min_company_age))
 
-for company_info in company_data_result:
-    print(company_info)
+#print out company results - if company in one group with minimum age bound3
+# for company_info in company_data_result:
+#     print(company_info)
 
 #TODO
-#- if company in all groups (shift minimum age)
-#- for each Company find product value, multiplied by, we have all age groups etries
+#1.1 if company in all groups (shift minimum age)
+company_all_ages = list()
+for c_info in company_data_result:
+    #print('company name', c_info[0])
+
+    ages_slice = c_info[1:-1]
+    company_ages = list(map(list, (ages_slice)))[0]
+    #print('company ages: ', company_ages)
+
+    ages_entries = list()
+
+    for c_age in company_ages:
+        #print("current company age for comparing: ", c_age)
+        ages_group = is_year_in_years_slice(c_age)
+        #print(ages_group)
+        ages_entries.append(is_year_in_years_slice(c_age))
+
+    #stay only unique entries of companies age entries
+    ages_entries = list(set(ages_entries))
+
+    #save results of searching
+    company_all_ages.append((c_info[0], ages_slice, ages_entries))
+
+#companies with all age bounds entries
+for company_info in company_all_ages:
+    print(company_info)
+
+#1.2 for each Company find product value, multiplied by, we have all age groups etries

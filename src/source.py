@@ -210,10 +210,18 @@ for c_info_once in company_minage_bound:
             booster = average_mean/c_info_once[-1] #minimum bound value when totalvalue stay equal average
             boosted_total = booster*c_info_once[-1]
             #print('totalvalue must be producted = ', c_info_once[-1], ' on: ', booster, ' boosted totalvalue: ', boosted_total)
-            compnay_updated_totals.append((c_info_once[0], c_info_once[1:-1][0], c_info_once[2], boosted_total))
+            compnay_updated_totals.append((c_info_once[0],
+                                           c_info_once[1:-1][0],
+                                           c_info_once[2],
+                                           {"multiplier": round(booster, 2),
+                                            "boosted_total": round(boosted_total, 2)}))
         else:
             #print('once company totalvalue = ', c_info_once[-1])
-            compnay_updated_totals.append((c_info_once[0], c_info_once[1:-1][0], c_info_once[2], c_info_once[-1]))
+            compnay_updated_totals.append((c_info_once[0],
+                                           c_info_once[1:-1][0],
+                                           c_info_once[2],
+                                           {"multiplier": 1.0,
+                                            "boosted_total": round(c_info_once[-1], 2)}))
 
 print('\nBOOSTED TOTAL VALUE FOR COMPANIES WITH ONE MINIMUM AGE BOUND:\n')
 for company_data in compnay_updated_totals:

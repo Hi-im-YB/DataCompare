@@ -90,11 +90,10 @@ for c_info in company_ages_by_names:
         pass
 
     company_data_result.append((c_info[0], c_info[1:-1], is_year_in_years_slice(min_company_age)))
-
     #print('minimum age: ', min_company_age)
     #print('ages slice: ', is_year_in_years_slice(min_company_age))
 
-#print out company results - if company in one group with minimum age bound3
+#print out company results - if company in one group with minimum age bound
 # for company_info in company_data_result:
 #     print(company_info)
 
@@ -160,19 +159,21 @@ for c_info in zip(company_profile['Company'], company_profile['TotalValue']):
 #find mean TotalValue for each Company
 dfc = pd.DataFrame(df_company_data, columns = ['Company', 'TotalValue'])
 dfc_total_means = dfc.groupby('Company', as_index=False)['TotalValue'].mean()
+dfc_total_max = dfc.groupby('Company', as_index=False)['TotalValue'].max()
 
 company_all = list()
 for c_info in company_all_entries:
     #print(c_info)
     try:
         mean_total = column_value_by_row(dfc_total_means, 'Company', c_info[0]).iloc[0, 1]
+        max_total = column_value_by_row(dfc_total_max, 'Company', c_info[0]).iloc[0, 1]
         #print(mean_total)
-        company_all.append((c_info[0], c_info[1:-1][0], c_info[2], mean_total))
+        company_all.append((c_info[0], c_info[1:-1][0], c_info[2], mean_total, max_total))
     except:
         # lose some data if no mean value of TotalValue for current company
         pass
 
-print('\nCOMPANIES WITH ALL AGES ENTRIES AND TotalValue MEANS:\n')
+print('\nCOMPANIES WITH ALL AGES ENTRIES AND TotalValue MEANS AND MAX\'S:\n')
 for c_info in company_all:
     print(c_info)
 
@@ -181,7 +182,25 @@ for c_info in company_all:
 average_k = 0.0
 
 for c_item in company_all:
-    average_k += c_item[-1]
+    average_k += c_item[-2]
 
 average_k = average_k/len(company_all)
 print('\nAVERAGE TOTAL VALUE OF ALL UNIQUE COMPANIES WITH ALL AGES ENTRIES: ', average_k)
+
+#TODO
+#1.1 for all companies with age bound = 1 and less than 5
+#save total value
+company_minage_bound = list()
+for company_info in company_all_ages:
+    try:
+        mean_total = column_value_by_row(dfc_total_means, 'Company', company_info[0]).iloc[0, 1]
+        #print(mean_total)
+        company_minage_bound.append((company_info[0], company_info[1:-1][0], company_info[2], mean_total))
+    except:
+        # lose some data if no mean value of TotalValue for current company
+        pass
+
+for c_info in company_minage_bound:
+    print(c_info)
+#1.2 for each that company product them current totalvalue
+#with k = (maxmean - mean)/2 of company with all age entries

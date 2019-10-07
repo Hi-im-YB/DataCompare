@@ -159,16 +159,14 @@ for c_info in zip(company_profile['Company'], company_profile['TotalValue']):
 #find mean TotalValue for each Company
 dfc = pd.DataFrame(df_company_data, columns = ['Company', 'TotalValue'])
 dfc_total_means = dfc.groupby('Company', as_index=False)['TotalValue'].mean()
-dfc_total_max = dfc.groupby('Company', as_index=False)['TotalValue'].max()
 
 company_all = list()
 for c_info in company_all_entries:
     #print(c_info)
     try:
         mean_total = column_value_by_row(dfc_total_means, 'Company', c_info[0]).iloc[0, 1]
-        max_total = column_value_by_row(dfc_total_max, 'Company', c_info[0]).iloc[0, 1]
         #print(mean_total)
-        company_all.append((c_info[0], c_info[1:-1][0], c_info[2], mean_total, max_total))
+        company_all.append((c_info[0], c_info[1:-1][0], c_info[2], mean_total))
     except:
         # lose some data if no mean value of TotalValue for current company
         pass
@@ -179,15 +177,14 @@ for c_info in company_all:
 
 #suppose that desirable product value is:
 #K_company_i = 1/<K>*A_i
-average_k = 0.0
+average_mean = 0.0
 
 for c_item in company_all:
-    average_k += c_item[-2]
+    average_mean += c_item[-1]
+average_mean = average_mean/len(company_all)
 
-average_k = average_k/len(company_all)
-print('\nAVERAGE TOTAL VALUE OF ALL UNIQUE COMPANIES WITH ALL AGES ENTRIES: ', average_k)
+print('\nAVERAGE MEAN TOTAL VALUE OF ALL UNIQUE COMPANIES WITH ALL AGES ENTRIES: ', average_mean)
 
-#TODO
 #1.1 for all companies with age bound = 1 and less than 5
 #save total value
 company_minage_bound = list()
@@ -200,7 +197,24 @@ for company_info in company_all_ages:
         # lose some data if no mean value of TotalValue for current company
         pass
 
+print('\nAVERAGE TOTAL VALUE FOR COMPANIES WITH ONE MINIMUM AGE BOUND:\n')
 for c_info in company_minage_bound:
     print(c_info)
+
 #1.2 for each that company product them current totalvalue
 #with k = (maxmean - mean)/2 of company with all age entries
+compnay_updated_totals = list()
+for c_info_once in company_minage_bound:
+        #print(c_info_once[0])
+        if c_info_once[-1] < average_mean:
+            booster = average_mean/c_info_once[-1] #minimum bound value when totalvalue stay equal average
+            boosted_total = booster*c_info_once[-1]
+            #print('totalvalue must be producted = ', c_info_once[-1], ' on: ', booster, ' boosted totalvalue: ', boosted_total)
+            compnay_updated_totals.append((c_info_once[0], c_info_once[1:-1][0], c_info_once[2], boosted_total))
+        else:
+            #print('once company totalvalue = ', c_info_once[-1])
+            compnay_updated_totals.append((c_info_once[0], c_info_once[1:-1][0], c_info_once[2], c_info_once[-1]))
+
+print('\nBOOSTED TOTAL VALUE FOR COMPANIES WITH ONE MINIMUM AGE BOUND:\n')
+for company_data in compnay_updated_totals:
+    print(company_data)

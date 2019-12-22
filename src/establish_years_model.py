@@ -52,101 +52,113 @@ def column_data_by_name(input_file, column_name):
 def column_value_by_row(df, column_value, row_value):
     return df.loc[df[column_value] == row_value]
 
-#get actual company info from data
-company_name = column_data_by_name(input_file, 'Company')
-company_years = column_data_by_name(input_file, 'YrsCompany')
-company_experience = column_data_by_name(input_file, 'YrsExperience')
-
-company_profile = {}
-company_profile['Company'] = company_name
-company_profile['YrsCompany'] = company_years
-company_profile['YrsExperience'] = company_experience
 
 #filter by unique rows
-print("Unfiltered companies & ages length: ", len(company_profile['YrsExperience']))
-company_profile_filtered = list()
-for company_info in zip(company_profile['Company'], company_profile['YrsExperience']):
-    company_profile_filtered.append(company_info)
-company_profile_filtered = list(set(company_profile_filtered))
+def filter_by_unique_rows(company_profile):
+    print("Unfiltered companies & ages length: ", len(company_profile['YrsExperience']))
+    company_profile_filtered = list()
+    for company_info in zip(company_profile['Company'], company_profile['YrsExperience']):
+        company_profile_filtered.append(company_info)
+    return list(set(company_profile_filtered))
+
 
 #make list of tuples with [(Company, Age1, Age2, ..., AgeN)]
-print("Filtered companies & ages length: ", len(company_profile_filtered))
-company_ages_by_names_raw = {}
-for c_name, c_age in company_profile_filtered:
-    company_ages_by_names_raw.setdefault(c_name, [c_name]).append(c_age)
-company_ages_by_names = list(map(tuple, company_ages_by_names_raw.values()))
+def filter_by_age_and_name(company_profile_filtered):
+    company_ages_by_names_raw = {}
+    print("Filtered companies & ages length: ", len(company_profile_filtered))
+    company_ages_by_names_raw = {}
+    for c_name, c_age in company_profile_filtered:
+        company_ages_by_names_raw.setdefault(c_name, [c_name]).append(c_age)
+    return list(map(tuple, company_ages_by_names_raw.values()))
+
 
 #find minimum company age and search if that value in group ages slice
-print("Filtered companies by ages length: ", len(company_ages_by_names))
-company_data_result = list()
-for c_info in company_ages_by_names:
-    #print('company name', company_info[0], 'ages: ', company_info[1:-1])
+def company_min_age_subset(company_ages_by_names):
+    print("Filtered companies by ages length: ", len(company_ages_by_names))
+    result = list()
+    for c_info in company_ages_by_names:
+        #print('company name', company_info[0], 'ages: ', company_info[1:-1])
+        min_company_age = 0.0
+        try:
+            min_company_age = min(c_info[1:-1])
+        except ValueError:
+            #print('Company have not age bounds, suppose that necessary experience is 0 years')
+            pass
+        result.append((c_info[0], c_info[1:-1], is_year_in_years_slice(min_company_age)))
+        #print('minimum age: ', min_company_age)
+        #print('ages slice: ', is_year_in_years_slice(min_company_age))
+    return result
 
-    min_company_age = 0.0
-    try:
-        min_company_age = min(c_info[1:-1])
-    except ValueError:
-        #print('Company have not age bounds, suppose that necessary experience is 0 years')
-        pass
 
-    company_data_result.append((c_info[0], c_info[1:-1], is_year_in_years_slice(min_company_age)))
-    #print('minimum age: ', min_company_age)
-    #print('ages slice: ', is_year_in_years_slice(min_company_age))
+#check if company
+#years experience factor in all groups (shift minimum age)
+def company_get_all_age_subsets(company_data_result):
+    result = list()
+    for c_info in company_data_result:
+        # print('company name', c_info[0])
+        ages_slice = c_info[1:-1]
+        company_ages = list(map(list, (ages_slice)))[0]
+        # print('company ages: ', company_ages)
+        ages_entries = list()
+        for c_age in company_ages:
+            # print("current company age for comparing: ", c_age)
+            ages_group = is_year_in_years_slice(c_age)
+            # print(ages_group)
+            ages_entries.append(is_year_in_years_slice(c_age))
+        # stay only unique entries of companies age entries
+        ages_entries = list(set(ages_entries))
+        # save results of searching
+        result.append((c_info[0], ages_slice, ages_entries))
+    return result
 
-#print out company results - if company in one group with minimum age bound
-# for company_info in company_data_result:
-#     print(company_info)
 
-#1.1 if company in all groups (shift minimum age)
-company_all_ages = list()
-for c_info in company_data_result:
-    #print('company name', c_info[0])
+#for each Company find years experience factor
+#that by we have all age groups etries
+def company_get_all_age_etries(company_ages):
+    result_entries = list()
+    for c_info in company_ages:
+        ages_entries = 0
+        for c_group in c_info[2]:
+            for g_group in YEARS_SLICE.keys():
+                #print('company = ', c_info[0], ' company group = ', c_group, ' bound group age = ', g_group)
+                if c_group == g_group:
+                    ages_entries += 1
+            if ages_entries == len(YEARS_SLICE.keys()):
+                #print('company age entries: ', ages_entries)
+                result_entries.append((c_info[0], c_info[1:-1][0][0], c_info[2]))
+    return result_entries
 
-    ages_slice = c_info[1:-1]
-    company_ages = list(map(list, (ages_slice)))[0]
-    #print('company ages: ', company_ages)
 
-    ages_entries = list()
+# get actual company info from data source
+company_name = column_data_by_name(input_file, 'Company')
+company_experience = column_data_by_name(input_file, 'YrsExperience')
+company_profile = {}
+company_profile['Company'] = company_name
+company_profile['YrsExperience'] = company_experience
+company_total = column_data_by_name(input_file, 'TotalValue')
+company_profile['TotalValue'] = company_total
 
-    for c_age in company_ages:
-        #print("current company age for comparing: ", c_age)
-        ages_group = is_year_in_years_slice(c_age)
-        #print(ages_group)
-        ages_entries.append(is_year_in_years_slice(c_age))
+# filter and process data by steps
+company_profile_filtered = filter_by_unique_rows(company_profile)
+company_ages_by_names = filter_by_age_and_name(company_profile_filtered)
+company_data_result = company_min_age_subset(company_ages_by_names)
+company_ages = company_get_all_age_subsets(company_data_result)
+company_all_entries = company_get_all_age_etries(company_ages)
 
-    #stay only unique entries of companies age entries
-    ages_entries = list(set(ages_entries))
-
-    #save results of searching
-    company_all_ages.append((c_info[0], ages_slice, ages_entries))
-
-#companies with all age bounds entries
+#companies with age bounds entries
 print('\nCOMPANIES WITH BOUND AGES ENTRIES:\n')
-for company_info in company_all_ages:
+for company_info in company_ages:
     print(company_info)
-
-#1.2 for each Company find product value, multiplied by, we have all age groups etries
-company_all_entries = list()
-for c_info in company_all_ages:
-    ages_entries = 0
-    for c_group in c_info[2]:
-        for g_group in YEARS_SLICE.keys():
-            #print('company = ', c_info[0], ' company group = ', c_group, ' bound group age = ', g_group)
-            if c_group == g_group:
-                ages_entries += 1
-
-        if ages_entries == len(YEARS_SLICE.keys()):
-            #print('company age entries: ', ages_entries)
-            company_all_entries.append((c_info[0], c_info[1:-1][0][0], c_info[2]))
 
 print('\nCOMPANIES WITH ALL AGES ENTRIES:\n')
 for company_info in company_all_entries:
     print(company_info)
 
-company_total = column_data_by_name(input_file, 'TotalValue')
-company_profile['TotalValue'] = company_total
 
-#find totalvalues for all companies rows and calculate local average
+#calculate product factors for each Company
+#to "establish" maximum equality of all years of experience subsets for each Company
+
+#1. 1 find totalvalues for all companies rows and calculate local average
 df_company_data = list()
 for c_info in zip(company_profile['Company'], company_profile['TotalValue']):
     #print(c_info)
@@ -156,7 +168,7 @@ for c_info in zip(company_profile['Company'], company_profile['TotalValue']):
         #lose some data because of str totalvalue to float
         pass
 
-#find mean TotalValue for each Company
+#1. 2 find mean TotalValue for each Company
 dfc = pd.DataFrame(df_company_data, columns = ['Company', 'TotalValue'])
 dfc_total_means = dfc.groupby('Company', as_index=False)['TotalValue'].mean()
 
@@ -175,7 +187,7 @@ print('\nCOMPANIES WITH ALL AGES ENTRIES AND TotalValue MEANS AND MAX\'S:\n')
 for c_info in company_all:
     print(c_info)
 
-#suppose that desirable product value is:
+#1. 3 suppose that desirable product value is:
 #K_company_i = 1/<K>*A_i
 average_mean = 0.0
 
@@ -185,10 +197,10 @@ average_mean = average_mean/len(company_all)
 
 print('\nAVERAGE MEAN TOTAL VALUE OF ALL UNIQUE COMPANIES WITH ALL AGES ENTRIES: ', average_mean)
 
-#1.1 for all companies with age bound = 1 and less than 5
+#2.1 for all companies with age bound = 1 and less than 5
 #save total value
 company_minage_bound = list()
-for company_info in company_all_ages:
+for company_info in company_ages:
     try:
         mean_total = column_value_by_row(dfc_total_means, 'Company', company_info[0]).iloc[0, 1]
         #print(mean_total)
@@ -201,7 +213,7 @@ print('\nAVERAGE TOTAL VALUE FOR COMPANIES WITH ONE MINIMUM AGE BOUND:\n')
 for c_info in company_minage_bound:
     print(c_info)
 
-#1.2 for each that company product them current totalvalue
+#2.2 for each that company product them current totalvalue
 #with k = (maxmean - mean)/2 of company with all age entries
 compnay_updated_totals = list()
 for c_info_once in company_minage_bound:

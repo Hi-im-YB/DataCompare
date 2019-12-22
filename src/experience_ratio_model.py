@@ -67,7 +67,7 @@ def column_value_by_row(df, column_value, row_value):
 def filter_by_unique_rows(company_profile):
     print("Unfiltered companies & ages length: ", len(company_profile['YrsExperience']))
     company_profile_filtered = list()
-    for company_info in zip(company_profile['Company'], company_profile['YrsExperience']):
+    for company_info in zip(company_profile['Company'], company_profile['YrsExperience'], company_profile['Title']):
         company_profile_filtered.append(company_info)
     return list(set(company_profile_filtered))
 
@@ -77,8 +77,8 @@ def filter_by_age_and_name(company_profile_filtered):
     company_ages_by_names_raw = {}
     print("Filtered companies & ages length: ", len(company_profile_filtered))
     company_ages_by_names_raw = {}
-    for c_name, c_age in company_profile_filtered:
-        company_ages_by_names_raw.setdefault(c_name, [c_name]).append(c_age)
+    for c_name, c_age, c_title in company_profile_filtered:
+        company_ages_by_names_raw.setdefault(c_name, [c_name]).append((c_age, c_title, ))
     return list(map(tuple, company_ages_by_names_raw.values()))
 
 
@@ -105,6 +105,7 @@ company_experience = column_data_by_name(input_file, 'YrsExperience')
 company_profile = {}
 company_profile['Company'] = company_name
 company_profile['YrsExperience'] = company_experience
+company_profile['Title'] = column_data_by_name(input_file, 'Title')
 company_total = column_data_by_name(input_file, 'TotalValue')
 company_profile['TotalValue'] = company_total
 
@@ -118,3 +119,7 @@ print('\nCOMPANIES SET DIM: ', len(company_data_result))
 print('\nCOMPANIES ENTRIES:\n')
 for company_info in company_data_result:
     print(company_info)
+
+#For each company have the next connection: Company -> Title = Base = AnnualBonus -> YrsExperience
+#Save YrsExperience factor for each current Company -> Title/Base/AnnualBonus
+#For each saved Company -> Title/Base/AnnualBonus calculate

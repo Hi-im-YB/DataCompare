@@ -68,14 +68,12 @@ def is_year_in_years_slice(company_ages):
     for company_age in company_ages:
         #for each experience group ages slice
         for exp_set in EXPERIENCE_SET.items():
-            #print('current experience data = ', exp_set, ' for company current experience value: ', company_age)
             #for each group factor save company factor
             #if it's experience year in one of the fifth group
             if company_age == 'nan':
                 years_groups.append([DEFAULT_GROUP_FACTOR])
             if float(company_age) >= float(exp_set[1][0]) and \
                 float(company_age) <= float(exp_set[1][-1]):
-                #print('In bounds, minimum age for group: ', group_data[0])
                 actual_group = exp_set[0]
                 years_groups.append(actual_group)
             elif float(company_age) > float(SIXTH_GROUP[0]):
@@ -184,8 +182,8 @@ df = pd.DataFrame(list(zip(company_data_result[0], company_data_result[1],
                            company_data_result[2], company_data_result[3],
                            company_data_result[4], company_data_result[5],
                            company_data_result[-1])),
-               columns =['Company(i) (i != j)', 'YrsExperience(i)', 'YrsExperience mean factor (i)',
-                         'Company(j) (i != j)', 'YrsExperience(j)', 'YrsExperience mean factor (j)',
-                         'YrsExperience factors ratio (i/j)'])
+               columns =['Company(i) (i != j)', 'YrsExperience(i)', 'YrsExperience\nmean factor (i)',
+                         'Company(j) (i != j)', 'YrsExperience(j)', 'YrsExperience\nmean factor (j)',
+                         'YrsExperience\nfactors ratio (i/j)'])
 #save dataframe to output file
 df.to_csv('companies_age_factors.csv', index=False, encoding='utf-8')

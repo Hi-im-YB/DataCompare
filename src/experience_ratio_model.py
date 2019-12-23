@@ -12,7 +12,7 @@ import pandas as pd
 # }
 
 #YrsExpCompanyN/YrsExpCompany1 - find density of YrsExperience value for each Company between all other Companies
-#Company |YrsExp | YrsFactor|CompanyN_YrsFactor/Compnay_YrsFactor_1 |
+#Company |YrsExp| YrsFactor|CompanyN_YrsFactor/Compnay_YrsFactor_1 |
 
 #experience years slices [N group * M age set]
 FIRST_GROUP = [0.0, 1.0, 2.0]
@@ -50,6 +50,11 @@ def column_data_by_name(input_file, column_name):
 def column_value_by_row(df, column_value, row_value):
     return df.loc[df[column_value] == row_value]
 
+# find median in list
+def median(input_list):
+    dim = len(input_list)
+    sorted_list = sorted(input_list)
+    return round((sum(sorted_list[dim//2 - 1:dim // 2+1])/2.0, sorted_list[dim // 2])[dim % 2], 2) if dim else None
 
 # find intersection between experience factor
 # and current company experience years
@@ -106,7 +111,7 @@ def filter_by_age_and_name(company_profile_filtered):
 
 
 #find minimum company age and search if that value in group ages slice
-def company_min_age_subset(company_ages_by_names):
+def get_factor_ages_intersection(company_ages_by_names):
     #print("Filtered companies by ages length: ", len(company_ages_by_names))
     result = list()
     # Company, ages, [factor1, ..., factor N]
@@ -134,26 +139,53 @@ company_profile['TotalValue'] = company_total
 # filter and process data by steps and work with only YrsExperience
 company_profile_filtered = filter_by_unique_rows(company_profile)
 company_ages_by_names = filter_by_age_and_name(company_profile_filtered)
-company_data_result = company_min_age_subset(company_ages_by_names)
+company_ages_factors_set = get_factor_ages_intersection(company_ages_by_names)
 
-
-# companies with all experience years
-print('\nCOMPANIES SET DIM: ', len(company_data_result))
+print('\nCOMPANIES SET DIM: ', len(company_ages_factors_set))
 print('\nCOMPANIES ENTRIES WITH ALL EXPERIENCE YEARS:\n')
-for company_info in company_data_result:
+for company_info in company_ages_factors_set:
     print(company_info)
 
-#For each saved Company average YrsExperience calculate nearest experience factor
-#create company -> ages -> [factor 1, factor2, ..., factor N]
+#1. 2 for each company experience factor set calculate mean experience factor
+company_ages_factors_mean_set = list()
+for company_info in company_ages_factors_set:
+    company_ages_factors_mean_set.append((company_info[0], company_info[1],
+                                          tuple(company_info[2]), median(company_info[2])))
 
-#transpose data
-company_data_result = list(map(list, zip(*company_data_result)))
+print('\nCOMPANIES WITH MEAN FACTORS SET DIM: ', len(company_ages_factors_mean_set))
+print('\nCOMPANIES ENTRIES WITH ALL EXPERIENCE YEARS INCLUDE FACTORS MEANS:\n')
+for company_info in company_ages_factors_mean_set:
+    print(company_info)
+
+# 1. 3 calculate ratio of mean factors
+# of years experience between all companies
+processed_companies = list()
+for company_orig in company_ages_factors_mean_set:
+    for company_comp in company_ages_factors_mean_set:
+        if company_orig[0] != company_comp[0]:
+            if company_comp[3] and company_orig[3]:
+                ratio_factor = round(company_orig[3]/company_comp[3], 2)
+                processed_companies.append((company_orig[0], company_orig[1],
+                                            company_orig[3],
+                                            company_comp[0], company_comp[1],
+                                            company_comp[3], ratio_factor))
+
+print('\nPROCESSED COMPANIES WITH RATION FACTORS DIM: ', len(processed_companies))
+print('\nPROCESSED COMPANIES WITH RATION FACTORS:\n')
+#sort alphabetically processed data
+processed_companies = list(sorted(processed_companies, key=lambda slice: slice[0]))
+for company_info in processed_companies:
+    print(company_info)
+
+# transpose data
+company_data_result = list(map(list, zip(*processed_companies)))
 #save final result to pandas dataframe
-df = pd.DataFrame(list(zip(company_data_result[0], company_data_result[1], company_data_result[2])),
-               columns =['Company', 'YrsExperience', 'YrsExperience factors'])
+df = pd.DataFrame(list(zip(company_data_result[0], company_data_result[1],
+                           company_data_result[2], company_data_result[3],
+                           company_data_result[4], company_data_result[5],
+                           company_data_result[-1])),
+               columns =['Company(i) (i != j)', 'YrsExperience(i)', 'YrsExperience mean factor (i)',
+                         'Company(j) (i != j)', 'YrsExperience(j)', 'YrsExperience mean factor (j)',
+                         'YrsExperience factors ratio (i/j)'])
 #save dataframe to output file
 df.to_csv('companies_age_factors.csv', index=False, encoding='utf-8')
-
-#For each saved Company average YrsExperience calculate
-# ratio between current Company experience factor and other N companies experience factor
-#create #company -> ages -> [factor 1, factor2, ..., factor N] -> mean factor -> mean factor Company 1, ..., ...

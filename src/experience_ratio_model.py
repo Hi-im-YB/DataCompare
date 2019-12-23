@@ -53,30 +53,37 @@ def column_value_by_row(df, column_value, row_value):
 
 # find intersection between experience factor
 # and current company experience years
-def is_year_in_years_slice(company_age):
+def is_year_in_years_slice(company_ages):
     years_groups = list()
+    # for the case when we have NAN value
+    # assume that it is equals
+    # to minimum factor = 1.0
     DEFAULT_GROUP_FACTOR = 1.0
-    #for each experience group
-    for exp_set in EXPERIENCE_SET.items():
-        #print('current experience data = ', exp_set, ' for company current experience value: ', company_age)
-        #for each group factor save company factor
-        #if it's experience year in one of the fifth group
-        if company_age == 'nan':
-            years_groups.append([DEFAULT_GROUP_FACTOR])
-        if float(company_age) >= float(exp_set[1][0]) and \
-            float(company_age) <= float(exp_set[1][-1]):
-            #print('In bounds, minimum age for group: ', group_data[0])
-            actual_group = exp_set[0]
-            years_groups.append(actual_group)
-        elif float(company_age) > float(SIXTH_GROUP[0]):
-            years_groups.append(sorted(EXPERIENCE_SET.keys())[-1])
-        elif float(company_age + 0.5) == float(exp_set[1][0]) or \
-            float(company_age + 0.5) == float(exp_set[1][-1]) or \
-            float(company_age - 0.5) == float(exp_set[1][0]) or \
-            float(company_age - 0.5) == float(exp_set[1][-1]):
-            years_groups.append(exp_set[0])
+    #for each company age
+    for company_age in company_ages:
+        #for each experience group ages slice
+        for exp_set in EXPERIENCE_SET.items():
+            #print('current experience data = ', exp_set, ' for company current experience value: ', company_age)
+            #for each group factor save company factor
+            #if it's experience year in one of the fifth group
+            if company_age == 'nan':
+                years_groups.append([DEFAULT_GROUP_FACTOR])
+            if float(company_age) >= float(exp_set[1][0]) and \
+                float(company_age) <= float(exp_set[1][-1]):
+                #print('In bounds, minimum age for group: ', group_data[0])
+                actual_group = exp_set[0]
+                years_groups.append(actual_group)
+            elif float(company_age) > float(SIXTH_GROUP[0]):
+                years_groups.append(sorted(EXPERIENCE_SET.keys())[-1])
+            elif float(company_age + 0.5) == float(exp_set[1][0]) or \
+                float(company_age + 0.5) == float(exp_set[1][-1]) or \
+                float(company_age - 0.5) == float(exp_set[1][0]) or \
+                float(company_age - 0.5) == float(exp_set[1][-1]):
+                years_groups.append(exp_set[0])
     #print('common years: ', years_groups)
-    return list(set(years_groups))
+    #save sorted by ascending order
+    #YrsExperience factor set for each current Company
+    return sorted(list(set(years_groups)))
 
 
 #filter by unique rows
@@ -102,15 +109,16 @@ def filter_by_age_and_name(company_profile_filtered):
 def company_min_age_subset(company_ages_by_names):
     #print("Filtered companies by ages length: ", len(company_ages_by_names))
     result = list()
+    # Company, ages, [factor1, ..., factor N]
+    # group by each category data
     for c_info in company_ages_by_names:
         #print('company name', c_info[0], 'ages: ', c_info[1:-1])
-        for c_age in c_info[1:-1]:
-            result.append((c_info[0], c_info[1:-1], is_year_in_years_slice(c_age)))
-            #print('ages slice: ', is_year_in_years_slice(c_age))
+        result.append((c_info[0], c_info[1:-1], is_year_in_years_slice(c_info[1:-1])))
+        #print('ages slice: ', is_year_in_years_slice(c_info[1:-1]))
     return result
 
 
-# get actual company info from data source
+# get actual company info from the data set source
 company_name = column_data_by_name(input_file, 'Company')
 company_experience = column_data_by_name(input_file, 'YrsExperience')
 company_profile = {}
@@ -119,24 +127,33 @@ company_profile['YrsExperience'] = company_experience
 company_total = column_data_by_name(input_file, 'TotalValue')
 company_profile['TotalValue'] = company_total
 
-# filter and process data by steps
+#1. 1 find instersection between YrsExperience factor set
+# and each Company YrsExperience values.
+# For each company have the next connection:
+# Company -> Title <-> Base <-> AnnualBonus -> YrsExperience
+# filter and process data by steps and work with only YrsExperience
 company_profile_filtered = filter_by_unique_rows(company_profile)
 company_ages_by_names = filter_by_age_and_name(company_profile_filtered)
 company_data_result = company_min_age_subset(company_ages_by_names)
 
-#companies with all experience years
+
+# companies with all experience years
 print('\nCOMPANIES SET DIM: ', len(company_data_result))
 print('\nCOMPANIES ENTRIES WITH ALL EXPERIENCE YEARS:\n')
-
-company_all_ages_filtered = list()
-for tup in company_data_result:
-    if tup not in company_all_ages_filtered:
-        company_all_ages_filtered.append(tup)
-
-for company_info in company_all_ages_filtered:
+for company_info in company_data_result:
     print(company_info)
 
-#For each company have the next connection: Company -> Title = Base = AnnualBonus -> YrsExperience
-#Save average YrsExperience factor for each current Company
 #For each saved Company average YrsExperience calculate nearest experience factor
-#For each saved Company average YrsExperience calculate ratio between current Company experience factor and other N companies experience factor
+#create company -> ages -> [factor 1, factor2, ..., factor N]
+
+#transpose data
+company_data_result = list(map(list, zip(*company_data_result)))
+#save final result to pandas dataframe
+df = pd.DataFrame(list(zip(company_data_result[0], company_data_result[1], company_data_result[2])),
+               columns =['Company', 'YrsExperience', 'YrsExperience factors'])
+#save dataframe to output file
+df.to_csv('companies_age_factors.csv', index=False, encoding='utf-8')
+
+#For each saved Company average YrsExperience calculate
+# ratio between current Company experience factor and other N companies experience factor
+#create #company -> ages -> [factor 1, factor2, ..., factor N] -> mean factor -> mean factor Company 1, ..., ...

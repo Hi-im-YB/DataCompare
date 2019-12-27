@@ -223,18 +223,29 @@ for c_info_once in company_minage_bound:
             boosted_total = booster*c_info_once[-1]
             #print('totalvalue must be producted = ', c_info_once[-1], ' on: ', booster, ' boosted totalvalue: ', boosted_total)
             compnay_updated_totals.append((c_info_once[0],
-                                           c_info_once[1:-1][0],
+                                           c_info_once[1:-1][0][0],
                                            c_info_once[2],
-                                           {"multiplier": round(booster, 2),
-                                            "boosted_total": round(boosted_total, 2)}))
+                                           round(booster, 2),
+                                           round(boosted_total, 2)))
         else:
             #print('once company totalvalue = ', c_info_once[-1])
             compnay_updated_totals.append((c_info_once[0],
-                                           c_info_once[1:-1][0],
+                                           c_info_once[1:-1][0][0],
                                            c_info_once[2],
-                                           {"multiplier": 1.0,
-                                            "boosted_total": round(c_info_once[-1], 2)}))
+                                           1.0,
+                                            round(c_info_once[-1], 2)))
 
 print('\nBOOSTED TOTAL VALUE FOR COMPANIES WITH ONE MINIMUM AGE BOUND:\n')
 for company_data in compnay_updated_totals:
     print(company_data)
+
+# transpose data
+company_data_result = list(map(list, zip(*compnay_updated_totals)))
+#save final result to pandas dataframe
+df = pd.DataFrame(list(zip(company_data_result[0], company_data_result[1],
+                           company_data_result[2], company_data_result[3],
+                           company_data_result[4])),
+               columns =['Company', 'YrsExperience', 'Years of experience groups',
+                         'multiplier', 'Total value corrected'])
+#save dataframe to output file
+df.to_csv('companies_total_values_corrected.csv', index=False, encoding='utf-8')
